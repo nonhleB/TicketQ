@@ -1,24 +1,35 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import apiClient from '../api/client';
 import TicketForm from './TicketForm.jsx';
 import TicketList from './TicketList.jsx';
-import { placeholderTickets } from '../data/placeholderTickets';
 
-// TODO (Day 4): fetch real tickets from GET /api/tickets on mount instead of
-// seeding from placeholderTickets, and POST new tickets to the API in handleCreate.
+// Day 4: fetches real tickets from GET /api/tickets on mount, and posts new
+// tickets to POST /api/tickets, then refetches to reflect the server's state.
 export default function EmployeeDashboard() {
-  const [tickets, setTickets] = useState(placeholderTickets);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
-  const handleCreate = (form) => {
-    const newTicket = {
-      _id: `local-${Date.now()}`,
-      title: form.title,
-      description: form.description,
-      priority: form.priority,
-      status: 'Open',
-      createdAt: new Date().toISOString(),
-      createdBy: { name: 'Alex Employee' },
-    };
-    setTickets((prev) => [newTicket, ...prev]);
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const { data } = await apiClient.get('/tickets');
+      setTickets(data.data);
+    } catch (err) {
+      setFetchError(err?.response?.data?.message || 'Could not load your tickets.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  const handleCreate = async (form) => {
+    await apiClient.post('/tickets', form);
+    await fetchTickets();
   };
 
   return (
@@ -36,7 +47,8 @@ export default function EmployeeDashboard() {
 
         <div className="panel">
           <h2 className="panel-title">Submitted requests</h2>
-          <TicketList tickets={tickets} loading={false} isAdmin={false} />
+          {fetchError && <div className="form-banner-error">{fetchError}</div>}
+          <TicketList tickets={tickets} loading={loading} isAdmin={false} />
         </div>
       </div>
     </div>

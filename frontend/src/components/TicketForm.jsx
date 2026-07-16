@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 
 const initialState = { title: '', description: '', priority: 'Medium' };
 
-// TODO (Day 4): replace the simulated onSubmit behavior with a real
-// POST /api/tickets call via axios, and surface real server-side errors.
+// Day 4: onSubmit now calls the real POST /api/tickets endpoint (passed down
+// from the dashboard), and surfaces actual server-side validation errors.
 export default function TicketForm({ onSubmit }) {
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState(false);
 
   const validate = () => {
@@ -25,8 +26,9 @@ export default function TicketForm({ onSubmit }) {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setServerError('');
     setSuccess(false);
 
     const validationErrors = validate();
@@ -34,18 +36,21 @@ export default function TicketForm({ onSubmit }) {
     if (Object.keys(validationErrors).length > 0) return;
 
     setSubmitting(true);
-    // Simulated async submit so the loading state behaves like the real Day 4 version will.
-    setTimeout(() => {
-      onSubmit(form);
+    try {
+      await onSubmit(form);
       setForm(initialState);
-      setSubmitting(false);
       setSuccess(true);
-    }, 300);
+    } catch (err) {
+      setServerError(err?.response?.data?.message || 'Could not submit the ticket. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      {success && <div className="form-banner-success">Ticket submitted (simulated — not yet saved to a server).</div>}
+      {serverError && <div className="form-banner-error">{serverError}</div>}
+      {success && <div className="form-banner-success">Ticket submitted successfully.</div>}
 
       <div className="form-field">
         <label className="form-label" htmlFor="title">Title</label>

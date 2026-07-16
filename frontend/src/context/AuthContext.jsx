@@ -1,31 +1,42 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import apiClient from '../api/client';
 
 const AuthContext = createContext(null);
 
-// Day 3 scope: simulate authentication locally so the role-based UI can be
-// built and tested end-to-end before the real API call is wired up on Day 4.
-const MOCK_USERS = {
-  Employee: { id: 'mock-employee-id', name: 'Alex Employee', email: 'employee@deskflow.com', role: 'Employee' },
-  Admin: { id: 'mock-admin-id', name: 'Jordan Admin', email: 'admin@deskflow.com', role: 'Admin' },
-};
+const TOKEN_KEY = 'deskflow_token';
+const USER_KEY = 'deskflow_user';
 
+// Day 4: real authentication — POST /api/auth/login via axios, persist the JWT,
+// and attach it to every subsequent request through the api client's interceptor.
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [initializing, setInitializing] = useState(true);
 
-  // TODO (Day 4): replace this with a real POST /api/auth/login call via axios,
-  // store the returned JWT, and set user from the response instead of MOCK_USERS.
-  const login = useCallback((role) => {
-    const mockUser = MOCK_USERS[role] || MOCK_USERS.Employee;
-    setUser(mockUser);
-    return Promise.resolve(mockUser);
+  useEffect(() => {
+    const storedUser = localStorage.getItem(USER_KEY);
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+    }
+    setInitializing(false);
+  }, []);
+
+  const login = useCallback(async (email, password) => {
+    const { data } = await apiClient.post('/auth/login', { email, password });
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    setUser(data.user);
+    return data.user;
   }, []);
 
   const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, initializing: false }}>
+    <AuthContext.Provider value={{ user, login, logout, initializing }}>
       {children}
     </AuthContext.Provider>
   );

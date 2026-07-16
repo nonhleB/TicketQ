@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import apiClient from '../api/client';
 import TicketList from './TicketList.jsx';
-import { placeholderTickets } from '../data/placeholderTickets';
 
 const FILTERS = ['All', 'Open', 'In Progress', 'Resolved'];
 
-// TODO (Day 4): fetch real tickets from GET /api/tickets on mount, and call
-// PUT /api/tickets/:id in handleStatusChange instead of updating local state only.
+// Day 4: fetches all tickets from GET /api/tickets, and calls
+// PUT /api/tickets/:id to persist status changes to the server.
 export default function AdminDashboard() {
-  const [tickets, setTickets] = useState(placeholderTickets);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [filter, setFilter] = useState('All');
 
-  const handleStatusChange = (ticketId, status) => {
-    setTickets((prev) => prev.map((t) => (t._id === ticketId ? { ...t, status } : t)));
-    return Promise.resolve();
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const { data } = await apiClient.get('/tickets');
+      setTickets(data.data);
+    } catch (err) {
+      setFetchError(err?.response?.data?.message || 'Could not load company tickets.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
+
+  const handleStatusChange = async (ticketId, status) => {
+    const { data } = await apiClient.put(`/tickets/${ticketId}`, { status });
+    setTickets((prev) => prev.map((t) => (t._id === ticketId ? data.data : t)));
   };
 
   const visibleTickets = filter === 'All' ? tickets : tickets.filter((t) => t.status === filter);
@@ -39,9 +58,10 @@ export default function AdminDashboard() {
           ))}
         </div>
 
+        {fetchError && <div className="form-banner-error">{fetchError}</div>}
         <TicketList
           tickets={visibleTickets}
-          loading={false}
+          loading={loading}
           isAdmin
           onStatusChange={handleStatusChange}
         />
