@@ -21,6 +21,14 @@ export function AuthProvider({ children }) {
     setInitializing(false);
   }, []);
 
+  // If any API call comes back 401 (expired/invalid token), the api client
+  // clears storage and fires this event — react to it by clearing local state too.
+  useEffect(() => {
+    const handleUnauthorized = () => setUser(null);
+    window.addEventListener('deskflow:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('deskflow:unauthorized', handleUnauthorized);
+  }, []);
+
   const login = useCallback(async (email, password) => {
     const { data } = await apiClient.post('/auth/login', { email, password });
     localStorage.setItem(TOKEN_KEY, data.token);

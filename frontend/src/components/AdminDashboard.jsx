@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import apiClient from '../api/client';
 import TicketList from './TicketList.jsx';
+import AnalyticsBar from './AnalyticsBar.jsx';
 
 const FILTERS = ['All', 'Open', 'In Progress', 'Resolved'];
 
@@ -42,6 +43,8 @@ export default function AdminDashboard() {
         <h1 className="page-title">All company tickets</h1>
         <p className="page-subtitle">Review incoming requests and update their status as work progresses.</p>
       </div>
+
+      <AnalyticsBar tickets={tickets} />
 
       <div className="panel">
         <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>

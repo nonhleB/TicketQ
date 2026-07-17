@@ -40,6 +40,13 @@ function errorHandler(err, req, res, next) {
     message = 'Authentication token has expired';
   }
 
+  // Malformed JSON request body (express.json() throws a SyntaxError with a
+  // 'body' property set by body-parser before it ever reaches our routes)
+  if (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && 'body' in err)) {
+    statusCode = 400;
+    message = 'Request body contains malformed JSON';
+  }
+
   if (statusCode === 500) {
     console.error(err);
   }

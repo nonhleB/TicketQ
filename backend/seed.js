@@ -12,6 +12,12 @@ const demoUsers = [
     role: 'Employee',
   },
   {
+    name: 'Sam Employee',
+    email: 'employee2@deskflow.com',
+    password: 'password123',
+    role: 'Employee',
+  },
+  {
     name: 'Jordan Admin',
     email: 'admin@deskflow.com',
     password: 'password123',
