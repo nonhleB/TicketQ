@@ -13,6 +13,7 @@ async function connectDB() {
     console.log(`MongoDB connected: ${mongoose.connection.host}`);
   } catch (err) {
     console.error(`MongoDB connection failed: ${err.message}`);
+     console.error('Full error for diagnosis:', err)
     process.exit(1);
   }
 }
